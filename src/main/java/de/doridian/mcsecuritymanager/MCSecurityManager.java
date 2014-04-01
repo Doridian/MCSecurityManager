@@ -7,17 +7,24 @@ import java.util.*;
 
 public class MCSecurityManager extends SecurityManager {
 	private final Set<ClassLoader> systemClassLoader = Collections.newSetFromMap(new IdentityHashMap<ClassLoader, Boolean>());
-	private final ClassLoader ownClassLoader;
+
+	private final Thread ownThread;
 
 	private final String proxyHost;
 	private final int proxyPort;
 
 	private final Set<File> allowedPaths = new HashSet<File>();
+	private final Set<File> allowedPathsRead = new HashSet<File>();
+
+	private final Set<String> validLibs = new HashSet<String>();
+
+	private final Set<String> blacklistedRuntimePermissions = new HashSet<String>();
 
 	MCSecurityManager(ClassLoader protectedClassLoader) {
 		this.systemClassLoader.add(this.getClass().getClassLoader());
 		this.systemClassLoader.add(ClassLoader.getSystemClassLoader());
-		ownClassLoader = protectedClassLoader;
+
+		ownThread = Thread.currentThread();
 
 		int pport = -1;
 		try {
@@ -26,16 +33,36 @@ public class MCSecurityManager extends SecurityManager {
 		proxyHost = System.getProperty("http.proxyHost");
 		proxyPort = pport;
 
-		addCanonicalAllowedFile(System.getProperty("user.dir"));
-		addCanonicalAllowedFile(System.getProperty("java.io.tmpdir"));
+		addCanonicalAllowedFile(System.getProperty("user.dir"), true);
+		addCanonicalAllowedFile(System.getProperty("java.io.tmpdir"), true);
 		addCanonicalAllowedFile(System.getProperty("java.home"));
+		addCanonicalAllowedFile("/usr/share/javazi/ZoneInfoMappings");
+		addCanonicalAllowedFile("/proc");
+		addCanonicalAllowedFile("/sys");
 		addCanonicalAllowedFile("/dev/random");
 		addCanonicalAllowedFile("/dev/urandom");
+
+		validLibs.add("nio");
+		validLibs.add("net");
+		validLibs.add("management");
+
+		blacklistedRuntimePermissions.add("setSecurityManager");
+		blacklistedRuntimePermissions.add("createSecurityManager");
+		blacklistedRuntimePermissions.add("usePolicy");
+		//blacklistedRuntimePermissions.add("readFileDescriptor");
+		//blacklistedRuntimePermissions.add("writeFileDescriptor");
 	}
 
-	private void addCanonicalAllowedFile(String file) {
+	private void addCanonicalAllowedFile(String _file) {
+		addCanonicalAllowedFile(_file, false);
+	}
+
+	private void addCanonicalAllowedFile(String _file, boolean allowWrite) {
 		try {
-			allowedPaths.add(new File(file).getCanonicalFile());
+			File file = new File(_file).getCanonicalFile();
+			if(allowWrite)
+				allowedPaths.add(file);
+			allowedPathsRead.add(file);
 		} catch (IOException e) { }
 	}
 
@@ -52,7 +79,7 @@ public class MCSecurityManager extends SecurityManager {
 
 	private boolean isMainUserspaceComponent() {
 		Class userspaceClass = getFirstUserspaceClass();
-		return userspaceClass != null && userspaceClass.getClassLoader() == ownClassLoader;
+		return userspaceClass != null && userspaceClass.getClassLoader() == ownThread.getContextClassLoader();
 	}
 
 	private boolean isUserspaceComponent() {
@@ -102,17 +129,32 @@ public class MCSecurityManager extends SecurityManager {
 
 	@Override
 	public void checkLink(String lib) {
+		if(validLibs.contains(lib))
+			return;
 		informAboutAction("loaded library \"" + lib + "\"", !isMainUserspaceComponent());
 	}
 
-	private void checkFileAccess(String fileName, String action) {
+	private final Object checkFileLock = new Object();
+	private boolean fileCheckDisabled = false;
+
+	private void checkFileAccess(String fileName, String action, Set<File> allowedRootPaths) {
 		final File _file = new File(fileName).getAbsoluteFile();
+		synchronized (checkFileLock) {
+			if(fileCheckDisabled)
+				return;
+			fileCheckDisabled = true;
+			if(_file.isDirectory()) {
+				fileCheckDisabled = false;
+				return;
+			}
+			fileCheckDisabled = false;
+		}
 		File file = _file;
 		do {
 			try {
 				file = file.getCanonicalFile();
 			} catch (IOException e) { }
-			if(allowedPaths.contains(file))
+			if(allowedRootPaths.contains(file))
 				return;
 		} while((file = file.getParentFile()) != null);
 		informAboutAction("accessed file \"" + _file.getAbsolutePath() + "\" outside of CWD for \"" + action + "\"", true);
@@ -120,17 +162,17 @@ public class MCSecurityManager extends SecurityManager {
 
 	@Override
 	public void checkDelete(String file) {
-		checkFileAccess(file, "delete");
+		checkFileAccess(file, "delete", allowedPaths);
 	}
 
 	@Override
 	public void checkWrite(String file) {
-		checkFileAccess(file, "write");
+		checkFileAccess(file, "write", allowedPaths);
 	}
 
 	@Override
 	public void checkRead(String file) {
-		checkFileAccess(file, "read");
+		checkFileAccess(file, "read", allowedPathsRead);
 	}
 
 	@Override
@@ -155,11 +197,18 @@ public class MCSecurityManager extends SecurityManager {
 
 	@Override
 	public void checkPermission(Permission perm) {
-
+		if(perm instanceof RuntimePermission) {
+			RuntimePermission rtPerm = (RuntimePermission)perm;
+			String rtPermName = rtPerm.getName();
+			if(blacklistedRuntimePermissions.contains(rtPermName))
+				informAboutAction("used RuntimePermission \"" + rtPermName + "\"", true);
+			if(rtPermName.startsWith("defineClassInPackage.") && SecurityMain.isInternalPackage(rtPermName.substring(21)))
+				informAboutAction("defined class in internal package \"" + rtPermName.substring(21) + "\"", !isMainUserspaceComponent());
+		}
 	}
 
 	@Override
 	public void checkPermission(Permission perm, Object context) {
-
+		checkPermission(perm);
 	}
 }

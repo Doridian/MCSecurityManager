@@ -16,11 +16,15 @@ public class SecurityMain {
 		}
 	}
 
+	static boolean isInternalPackage(String pkg) {
+		return pkg.equals("de.doridian.mcsecuritymanager") || pkg.equals("net.minecraft") || pkg.equals("org.bukkit") || pkg.startsWith("net.minecraft.") || pkg.startsWith("org.bukkit.");
+	}
+
 	private static void realMain(final String[] args) throws Exception {
 		final File file = new File(System.getProperty("de.doridian.mcsecuritymanager.launchJar"));
 		final String mainClass = new JarFile(file).getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
 
-		final URLClassLoader urlClassLoader = new URLClassLoader(new URL[] { file.toURI().toURL() });
+		final MCSecurityClassLoader urlClassLoader = new MCSecurityClassLoader(new URL[] { file.toURI().toURL() });
 		final Method m = urlClassLoader.loadClass(mainClass).getMethod("main", String[].class);
 
 		Thread t = new Thread() {
@@ -31,6 +35,13 @@ public class SecurityMain {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+			}
+
+			@Override
+			public void setContextClassLoader(ClassLoader cl) {
+				if(!isInternalPackage(cl.getClass().getPackage().getName()))
+					throw new RuntimeException("DENIED");
+				super.setContextClassLoader(cl);
 			}
 		};
 		t.setContextClassLoader(urlClassLoader);
