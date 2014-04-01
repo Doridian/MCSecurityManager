@@ -37,6 +37,17 @@
                             <addClasspath>true</addClasspath>
                             <mainClass>de.doridian.mcsecuritymanager.SecurityMain</mainClass>
                         </manifest>
+                        <manifestEntries>
+                            <Sealed>true</Sealed>
+                        </manifestEntries>
+                        <manifestSections>
+                            <manifestSection>
+                                <Name>de/doridian/mcsecuritymanager/</Name>
+                                <manifestEntries>
+                                    <Sealed>true</Sealed>
+                                </manifestEntries>
+                            </manifestSection>
+                        </manifestSections>
                     </archive>
                 </configuration>
             </plugin>
