@@ -41,6 +41,7 @@ public class MCSecurityManager extends SecurityManager {
 		addCanonicalAllowedFile("/sys");
 		addCanonicalAllowedFile("/dev/random");
 		addCanonicalAllowedFile("/dev/urandom");
+		addCanonicalAllowedFile("/etc/inputrc");
 
 		validLibs.add("nio");
 		validLibs.add("net");
@@ -107,7 +108,7 @@ public class MCSecurityManager extends SecurityManager {
 		String className = userspaceClass == null ? "UNKNOWN CLASS" : userspaceClass.getName();
 		System.err.println("[SECURITY] " + className + " " + action + " => " + (deny ? "DENIED" : "ALLOWED"));
 		if(deny)
-			throw new RuntimeException("DENIED");
+			throw new UnsatisfiedLinkError("DENIED");
 	}
 
 	@Override
