@@ -3,7 +3,6 @@ package de.doridian.mcsecuritymanager;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 
@@ -17,7 +16,7 @@ public class SecurityMain {
 	}
 
 	static boolean isInternalPackage(String pkg) {
-		return pkg.equals("de.doridian.mcsecuritymanager") || pkg.equals("net.minecraft") || pkg.equals("org.bukkit") || pkg.startsWith("net.minecraft.") || pkg.startsWith("org.bukkit.");
+		return pkg.equals("de.doridian.mcsecuritymanager") || pkg.equals("net.md_5.bungee") || pkg.equals("net.minecraft") || pkg.equals("org.bukkit") || pkg.startsWith("net.minecraft.") || pkg.startsWith("org.bukkit.") || pkg.startsWith("net.md_5.bungee.");
 	}
 
 	private static void realMain(final String[] args) throws Exception {
