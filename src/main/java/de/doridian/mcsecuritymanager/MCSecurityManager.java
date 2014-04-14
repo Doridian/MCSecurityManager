@@ -106,6 +106,8 @@ public class MCSecurityManager extends SecurityManager {
 	private void informAboutAction(String action, boolean deny) {
 		Class userspaceClass = getFirstUserspaceClass();
 		String className = userspaceClass == null ? "UNKNOWN CLASS" : userspaceClass.getName();
+		if(!deny && className.equals("net.minecraft.util.com.mojang.authlib.HttpAuthenticationService"))
+			return;
 		System.err.println("[SECURITY] " + className + " " + action + " => " + (deny ? "DENIED" : "ALLOWED"));
 		if(deny)
 			throw new UnsatisfiedLinkError("DENIED");
