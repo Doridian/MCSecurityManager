@@ -127,7 +127,9 @@ public class MCSecurityManager extends SecurityManager {
 
 	@Override
 	public void checkListen(int port) {
-		informAboutAction("started listener on port" + port, false);
+		if(port < 1)
+			return;
+		informAboutAction("started listener on port " + port, false);
 	}
 
 	@Override
