@@ -1,4 +1,4 @@
-package de.doridian.mcsecuritymanager;
+package com.foxelbox.mcsecuritymanager;
 
 import java.io.File;
 import java.io.IOException;

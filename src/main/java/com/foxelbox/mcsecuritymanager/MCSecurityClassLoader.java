@@ -1,4 +1,4 @@
-package de.doridian.mcsecuritymanager;
+package com.foxelbox.mcsecuritymanager;
 
 import java.net.URL;
 import java.net.URLClassLoader;

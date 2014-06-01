@@ -1,4 +1,4 @@
-package de.doridian.mcsecuritymanager;
+package com.foxelbox.mcsecuritymanager;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -16,11 +16,11 @@ public class SecurityMain {
 	}
 
 	static boolean isInternalPackage(String pkg) {
-		return pkg.equals("de.doridian.mcsecuritymanager") || pkg.equals("net.md_5.bungee") || pkg.equals("net.minecraft") || pkg.equals("org.bukkit") || pkg.startsWith("net.minecraft.") || pkg.startsWith("org.bukkit.") || pkg.startsWith("net.md_5.bungee.");
+		return pkg.equals("com.foxelbox.mcsecuritymanager") || pkg.equals("net.md_5.bungee") || pkg.equals("net.minecraft") || pkg.equals("org.bukkit") || pkg.startsWith("net.minecraft.") || pkg.startsWith("org.bukkit.") || pkg.startsWith("net.md_5.bungee.");
 	}
 
 	private static void realMain(final String[] args) throws Exception {
-		final File file = new File(System.getProperty("de.doridian.mcsecuritymanager.launchJar"));
+		final File file = new File(System.getProperty("com.foxelbox.mcsecuritymanager.launchJar"));
 		final String mainClass = new JarFile(file).getManifest().getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
 
 		final MCSecurityClassLoader urlClassLoader = new MCSecurityClassLoader(new URL[] { file.toURI().toURL() });
